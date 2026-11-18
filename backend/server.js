@@ -1,6 +1,8 @@
 const express = require("express");
 const pool = require("./config/db");
 const expenseRoutes = require("./routes/expenseRoutes");
+const groupRoutes = require("./routes/groupRoutes");
+const userRoutes = require("./routes/userRoutes");
 
 const app = express();
 
@@ -11,6 +13,8 @@ app.use(express.json());
 
 // Register routes
 app.use("/api/expenses", expenseRoutes);
+app.use("/api/groups", groupRoutes);
+app.use("/api/users", userRoutes);
 
 app.get("/", (req, res) => {
     res.send("Welcome to SplitMate Backend!");
