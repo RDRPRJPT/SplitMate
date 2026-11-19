@@ -3,13 +3,16 @@ const pool = require("./config/db");
 const expenseRoutes = require("./routes/expenseRoutes");
 const groupRoutes = require("./routes/groupRoutes");
 const userRoutes = require("./routes/userRoutes");
+const cors = require("cors");
 
 const app = express();
 
 const PORT = 5000;
 
 // Middleware must come before routes
+app.use(cors());
 app.use(express.json());
+
 
 // Register routes
 app.use("/api/expenses", expenseRoutes);
