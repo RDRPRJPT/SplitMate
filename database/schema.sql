@@ -33,3 +33,13 @@ CREATE TABLE expenses (
         FOREIGN KEY (group_id, paid_by)
         REFERENCES group_members (group_id, user_id)
 );
+
+CREATE TABLE expense_splits (
+    id SERIAL PRIMARY KEY,
+    expense_id INTEGER NOT NULL REFERENCES expenses(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    amount_owed INTEGER NOT NULL,
+
+    CONSTRAINT unique_expense_user
+        UNIQUE (expense_id, user_id)
+);
