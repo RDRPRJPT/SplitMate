@@ -4,6 +4,7 @@ const expenseRoutes = require("./routes/expenseRoutes");
 const groupRoutes = require("./routes/groupRoutes");
 const userRoutes = require("./routes/userRoutes");
 const cors = require("cors");
+const authMiddleware = require("./middleware/authMiddleware");
 
 const app = express();
 
@@ -32,6 +33,8 @@ app.get("/api/db-test", async (req, res) => {
         res.status(500).send("Database connection failed");
     }
 });
+
+
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

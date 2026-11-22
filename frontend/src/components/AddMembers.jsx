@@ -1,4 +1,6 @@
+
 import { useEffect, useState } from "react";
+import { apiRequest } from "../api";
 
 function AddMember({ groupID, onMemberAdded }) {
   const [users, setUsers] = useState([]);
@@ -12,13 +14,7 @@ function AddMember({ groupID, onMemberAdded }) {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/users");
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch users");
-        }
-
-        const data = await response.json();
+        const data = await apiRequest("/api/users");
         setUsers(data);
       } catch (error) {
         setError(error.message);
@@ -44,24 +40,15 @@ function AddMember({ groupID, onMemberAdded }) {
       setError("");
       setSuccess("");
 
-      const response = await fetch(
-        `http://localhost:5000/api/groups/${groupID}/members`,
+      const data = await apiRequest(
+        `/api/groups/${groupID}/members`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
           body: JSON.stringify({
             userID: Number(selectedUser),
           }),
         }
       );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to add member");
-      }
 
       const addedUser = users.find(
         (user) => user.id === Number(selectedUser)

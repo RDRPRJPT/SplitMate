@@ -1,10 +1,47 @@
 const express = require("express");
 const pool = require("../config/db");
+const authMiddleware = require("../middleware/authMiddleware");
 
 const router = express.Router();
+router.use(authMiddleware);
+
+// Check whether the logged-in user belongs to the group
+async function checkGroupMembership(req, res, next) {
+    try {
+        const groupID = req.body?.groupID || req.query?.groupID;
+
+        if (!groupID || !Number.isInteger(Number(groupID))) {
+            return res.status(400).json({
+                error: "Valid group ID is required"
+            });
+        }
+
+        const result = await pool.query(
+            `SELECT 1
+             FROM group_members
+             WHERE group_id = $1 AND user_id = $2`,
+            [groupID, req.user.userId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                error: "Group not found"
+            });
+        }
+
+        next();
+
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            error: "Failed to verify group membership"
+        });
+    }
+}
 
 // POST - Add an expense
-router.post("/", async (req, res) => {
+router.post("/",checkGroupMembership, async (req, res) => {
     const { description, amount, paidBy, groupID } = req.body;
 
     // Validate input
@@ -134,7 +171,7 @@ router.post("/", async (req, res) => {
 // GET - Retrieve expenses
 
 // GET - Retrieve all expenses, including their splits
-router.get("/", async (req, res) => {
+router.get("/",checkGroupMembership, async (req, res) => {
     try {
         const { groupID } = req.query;
 

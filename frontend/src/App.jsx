@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 
 import Navbar from "./components/Navbar";
@@ -5,8 +6,13 @@ import CreateGroupModal from "./components/CreateGroupModal";
 
 import Dashboard from "./pages/Dashboard";
 import GroupDetails from "./pages/GroupDetails";
+import Auth from "./pages/Auth";
+
+import { apiRequest } from "./api";
 
 function App() {
+  const [user, setUser] = useState(null);
+
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -18,20 +24,49 @@ function App() {
 
   const [selectedGroup, setSelectedGroup] = useState(null);
 
-  // Fetch groups
   useEffect(() => {
-    fetch("http://localhost:5000/api/groups")
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to fetch groups");
-        }
+    const restoreSession = async () => {
+      const token = localStorage.getItem("token");
 
-        return response.json();
-      })
-      .then((data) => setGroups(data))
-      .catch((error) => setError(error.message))
-      .finally(() => setLoading(false));
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const userData = await apiRequest("/api/users/me");
+        setUser(userData);
+      } catch (error) {
+        localStorage.removeItem("token");
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    restoreSession();
   }, []);
+
+  // Fetch groups after login
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchGroups = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const data = await apiRequest("/api/groups");
+        setGroups(data);
+      } catch (error) {
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchGroups();
+  }, [user]);
 
   // Create group
   const handleCreateGroup = async (e) => {
@@ -46,33 +81,44 @@ function App() {
       setCreating(true);
       setCreateError("");
 
-      const response = await fetch("http://localhost:5000/api/groups", {
+      const data = await apiRequest("/api/groups", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({
           name: groupName,
         }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to create group");
-      }
-
       setGroups((previousGroups) => [...previousGroups, data]);
       setGroupName("");
       setShowModal(false);
-
     } catch (error) {
       setCreateError(error.message);
-
     } finally {
       setCreating(false);
     }
   };
+
+  // Logout
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setUser(null);
+    setGroups([]);
+    setSelectedGroup(null);
+  };
+
+  // Wait until session restoration is complete
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#0B1120] text-lime-300">
+        Restoring your session...
+      </div>
+    );
+  }
+
+  // Show login/register screen
+  if (!user) {
+    return <Auth onLogin={setUser} />;
+  }
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#0B1120] text-white">
@@ -85,6 +131,15 @@ function App() {
 
       <div className="relative">
         <Navbar />
+
+        <div className="flex justify-end px-6 pt-4">
+          <button
+            onClick={handleLogout}
+            className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300 transition hover:border-red-400/50 hover:text-red-400"
+          >
+            Logout
+          </button>
+        </div>
 
         {selectedGroup ? (
           <GroupDetails

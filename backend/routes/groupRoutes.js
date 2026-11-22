@@ -1,13 +1,49 @@
 const express = require("express");
 const pool = require("../config/db");
+const authMiddleware = require("../middleware/authMiddleware");
 
 const router = express.Router();
+router.use(authMiddleware);
+
+// Check whether the logged-in user belongs to the group
+async function checkGroupMembership(req, res, next) {
+    try {
+        const { groupID } = req.params;
+
+        const result = await pool.query(
+            `SELECT 1
+             FROM group_members
+             WHERE group_id = $1 AND user_id = $2`,
+            [groupID, req.user.userId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                error: "Group not found"
+            });
+        }
+
+        next();
+
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            error: "Failed to verify group membership"
+        });
+    }
+}
 
 // GET - Retrieve all groups
 router.get("/", async (req, res) => {
     try {
         const result = await pool.query(
-            "SELECT * FROM groups ORDER BY id ASC"
+            `SELECT g.*
+                FROM groups g
+                JOIN group_members gm ON gm.group_id = g.id
+                WHERE gm.user_id = $1
+                ORDER BY g.id ASC`,
+                [req.user.userId]   
         );
 
         res.status(200).json(result.rows);
@@ -21,7 +57,7 @@ router.get("/", async (req, res) => {
 });
 
 // GET - Retrieve members of a group
-router.get("/:groupID/members", async (req, res) => {
+router.get("/:groupID/members",checkGroupMembership, async (req, res) => {
     try {
         const { groupID } = req.params;
 
@@ -48,35 +84,62 @@ router.get("/:groupID/members", async (req, res) => {
 });
 
 // POST - Create a new group
+// POST - Create a new group
 router.post("/", async (req, res) => {
+    let client;
+
     try {
         const { name } = req.body;
 
-        if (!name || !name.trim()) {
+        if (!name || typeof name !== "string" || !name.trim()) {
             return res.status(400).json({
                 error: "Group name is required"
             });
         }
 
-        const result = await pool.query(
+        client = await pool.connect();
+
+        await client.query("BEGIN");
+
+        const groupResult = await client.query(
             `INSERT INTO groups (name)
              VALUES ($1)
              RETURNING *`,
             [name.trim()]
         );
 
-        res.status(201).json(result.rows[0]);
+        const newGroup = groupResult.rows[0];
+
+        await client.query(
+            `INSERT INTO group_members (group_id, user_id)
+             VALUES ($1, $2)`,
+            [newGroup.id, req.user.userId]
+        );
+
+        await client.query("COMMIT");
+
+        res.status(201).json(newGroup);
 
     } catch (error) {
+        if (client) {
+            await client.query("ROLLBACK");
+        }
+
         console.error(error);
+
         res.status(500).json({
             error: "Failed to create group"
         });
+
+    } finally {
+        if (client) {
+            client.release();
+        }
     }
 });
 
 // POST - Add a member to a group
-router.post("/:groupID/members", async (req, res) => {
+router.post("/:groupID/members",checkGroupMembership, async (req, res) => {
     try {
         const { groupID } = req.params;
         const { userID } = req.body;
@@ -119,7 +182,7 @@ router.post("/:groupID/members", async (req, res) => {
 
 
 // GET - Calculate balances of all group members
-router.get("/:groupID/balances", async (req, res) => {
+router.get("/:groupID/balances",checkGroupMembership, async (req, res) => {
     try {
         const { groupID } = req.params;
 
@@ -181,7 +244,7 @@ router.get("/:groupID/balances", async (req, res) => {
 
 
 // GET - Generate settlement suggestions
-router.get("/:groupID/settlements", async (req, res) => {
+router.get("/:groupID/settlements",checkGroupMembership, async (req, res) => {
     try {
         const { groupID } = req.params;
 

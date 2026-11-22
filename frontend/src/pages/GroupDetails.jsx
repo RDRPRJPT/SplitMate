@@ -1,5 +1,5 @@
-
 import { useEffect, useState } from "react";
+import { apiRequest } from "../api";
 
 import AddMembers from "../components/AddMembers";
 import AddExpense from "../components/AddExpense";
@@ -15,20 +15,14 @@ function GroupDetails({ group, onBack }) {
 
   const refreshFinancials = async () => {
     try {
-      const [balancesResponse, settlementsResponse] = await Promise.all([
-        fetch(`http://localhost:5000/api/groups/${group.id}/balances`),
-        fetch(`http://localhost:5000/api/groups/${group.id}/settlements`),
+      const [balancesData, settlementsData] = await Promise.all([
+        apiRequest(`/api/groups/${group.id}/balances`),
+        apiRequest(`/api/groups/${group.id}/settlements`),
       ]);
-
-      if (!balancesResponse.ok || !settlementsResponse.ok) {
-        throw new Error("Failed to refresh financial data");
-      }
-
-      const balancesData = await balancesResponse.json();
-      const settlementsData = await settlementsResponse.json();
 
       setBalances(balancesData);
       setSettlements(settlementsData);
+
     } catch (error) {
       setError(error.message);
     }
@@ -41,30 +35,16 @@ function GroupDetails({ group, onBack }) {
         setError("");
 
         const [
-          membersResponse,
-          expensesResponse,
-          balancesResponse,
-          settlementsResponse,
+          membersData,
+          expensesData,
+          balancesData,
+          settlementsData,
         ] = await Promise.all([
-          fetch(`http://localhost:5000/api/groups/${group.id}/members`),
-          fetch(`http://localhost:5000/api/expenses?groupID=${group.id}`),
-          fetch(`http://localhost:5000/api/groups/${group.id}/balances`),
-          fetch(`http://localhost:5000/api/groups/${group.id}/settlements`),
+          apiRequest(`/api/groups/${group.id}/members`),
+          apiRequest(`/api/expenses?groupID=${group.id}`),
+          apiRequest(`/api/groups/${group.id}/balances`),
+          apiRequest(`/api/groups/${group.id}/settlements`),
         ]);
-
-        if (
-          !membersResponse.ok ||
-          !expensesResponse.ok ||
-          !balancesResponse.ok ||
-          !settlementsResponse.ok
-        ) {
-          throw new Error("Failed to fetch group data");
-        }
-
-        const membersData = await membersResponse.json();
-        const expensesData = await expensesResponse.json();
-        const balancesData = await balancesResponse.json();
-        const settlementsData = await settlementsResponse.json();
 
         setMembers(membersData);
         setExpenses(expensesData);
@@ -326,7 +306,7 @@ function GroupDetails({ group, onBack }) {
                       ...previousExpenses,
                       newExpense,
                     ]);
-                    refreshFinancials();
+                    refreshFinancials();  
                   }}
                 />
               </div>

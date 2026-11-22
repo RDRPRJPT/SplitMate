@@ -1,5 +1,5 @@
-
 import { useState } from "react";
+import { apiRequest } from "../api";
 
 function AddExpense({ groupID, members, onExpenseAdded }) {
   const [description, setDescription] = useState("");
@@ -32,11 +32,8 @@ function AddExpense({ groupID, members, onExpenseAdded }) {
       setError("");
       setSuccess("");
 
-      const response = await fetch("http://localhost:5000/api/expenses", {
+      const data = await apiRequest("/api/expenses", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({
           description: description.trim(),
           amount: Number(amount),
@@ -44,12 +41,6 @@ function AddExpense({ groupID, members, onExpenseAdded }) {
           groupID: Number(groupID),
         }),
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to add expense");
-      }
 
       const payer = members.find(
         (member) => member.id === Number(paidBy)
