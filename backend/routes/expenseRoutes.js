@@ -45,23 +45,29 @@ router.post("/",checkGroupMembership, async (req, res) => {
     const { description, amount, paidBy, groupID } = req.body;
 
     // Validate input
-    if (!description || !description.trim()) {
+    if (typeof description !== "string" || !description.trim()) {
         return res.status(400).json({
             error: "Description is required"
         });
     }
 
-    if (!Number.isInteger(amount) || amount <= 0) {
+    if (description.trim().length > 100) {
         return res.status(400).json({
-            error: "Amount should be positive integer"
+            error: "Description cannot exceed 100 characters"
         });
     }
 
-    if (!Number.isInteger(paidBy) || paidBy <= 0) {
+    if (!Number.isSafeInteger(amount) || amount <= 0) {
         return res.status(400).json({
-            error: "Valid payer ID is required"
+            error: "Amount must be a positive safe integer"
         });
     }
+
+    if (!Number.isSafeInteger(paidBy) || paidBy <= 0) {
+    return res.status(400).json({
+        error: "Valid payer ID is required"
+    });
+}
 
     if (!Number.isInteger(groupID) || groupID <= 0) {
         return res.status(400).json({
