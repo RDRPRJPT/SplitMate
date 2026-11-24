@@ -1,3 +1,4 @@
+
 const express = require("express");
 const pool = require("../config/db");
 const authMiddleware = require("../middleware/authMiddleware");
@@ -9,8 +10,13 @@ router.use(authMiddleware);
 async function checkGroupMembership(req, res, next) {
     try {
         const groupID = req.body?.groupID || req.query?.groupID;
+        const numericGroupID = Number(groupID);
 
-        if (!groupID || !Number.isInteger(Number(groupID))) {
+        if (
+            !Number.isSafeInteger(numericGroupID) ||
+            numericGroupID <= 0 ||
+            numericGroupID > 2147483647
+        ) {
             return res.status(400).json({
                 error: "Valid group ID is required"
             });
@@ -20,7 +26,7 @@ async function checkGroupMembership(req, res, next) {
             `SELECT 1
              FROM group_members
              WHERE group_id = $1 AND user_id = $2`,
-            [groupID, req.user.userId]
+            [numericGroupID, req.user.userId]
         );
 
         if (result.rows.length === 0) {
@@ -41,10 +47,10 @@ async function checkGroupMembership(req, res, next) {
 }
 
 // POST - Add an expense
-router.post("/",checkGroupMembership, async (req, res) => {
+router.post("/", checkGroupMembership, async (req, res) => {
     const { description, amount, paidBy, groupID } = req.body;
 
-    // Validate input
+    // Validate description
     if (typeof description !== "string" || !description.trim()) {
         return res.status(400).json({
             error: "Description is required"
@@ -57,29 +63,44 @@ router.post("/",checkGroupMembership, async (req, res) => {
         });
     }
 
-    if (!Number.isSafeInteger(amount) || amount <= 0) {
+    // Validate amount
+    if (
+        !Number.isSafeInteger(amount) ||
+        amount <= 0 ||
+        amount > 2147483647
+    ) {
         return res.status(400).json({
-            error: "Amount must be a positive safe integer"
+            error: "Amount must be a positive safe integer within the allowed limit"
         });
     }
 
-    if (!Number.isSafeInteger(paidBy) || paidBy <= 0) {
-    return res.status(400).json({
-        error: "Valid payer ID is required"
-    });
-}
+    // Validate payer ID
+    if (
+        !Number.isSafeInteger(paidBy) ||
+        paidBy <= 0 ||
+        paidBy > 2147483647
+    ) {
+        return res.status(400).json({
+            error: "Valid payer ID is required"
+        });
+    }
 
-    if (!Number.isInteger(groupID) || groupID <= 0) {
+    // Validate group ID
+    if (
+        !Number.isSafeInteger(groupID) ||
+        groupID <= 0 ||
+        groupID > 2147483647
+    ) {
         return res.status(400).json({
             error: "Valid group ID is required"
         });
     }
 
     let client;
-    try {
 
+    try {
         client = await pool.connect();
-        // Start transaction
+
         await client.query("BEGIN");
 
         // 1. Insert expense
@@ -133,37 +154,37 @@ router.post("/",checkGroupMembership, async (req, res) => {
         });
 
     } catch (error) {
-    if (client) {
-        try {
-            await client.query("ROLLBACK");
-        } catch (rollbackError) {
-            console.error("Rollback failed:", rollbackError);
+        if (client) {
+            try {
+                await client.query("ROLLBACK");
+            } catch (rollbackError) {
+                console.error("Rollback failed:", rollbackError);
+            }
         }
-    }
 
-    console.error(error);
+        console.error(error);
 
-    if (error.code === "23503") {
-        return res.status(400).json({
-            error: "Invalid user or group, or payer is not a member of this group"
+        if (error.code === "23503") {
+            return res.status(400).json({
+                error: "Invalid user or group, or payer is not a member of this group"
+            });
+        }
+
+        if (error.code === "23502") {
+            return res.status(400).json({
+                error: "A required field is missing"
+            });
+        }
+
+        if (error.code === "23505") {
+            return res.status(409).json({
+                error: "Duplicate record"
+            });
+        }
+
+        res.status(500).json({
+            error: "Internal server error"
         });
-    }
-
-    if (error.code === "23502") {
-        return res.status(400).json({
-            error: "A required field is missing"
-        });
-    }
-
-    if (error.code === "23505") {
-        return res.status(409).json({
-            error: "Duplicate record"
-        });
-    }
-
-    res.status(500).json({
-        error: "Internal server error"
-    });
 
     } finally {
         if (client) {
@@ -172,16 +193,12 @@ router.post("/",checkGroupMembership, async (req, res) => {
     }
 });
 
-
-// GET - Retrieve all expenses
-// GET - Retrieve expenses
-
 // GET - Retrieve all expenses, including their splits
-router.get("/",checkGroupMembership, async (req, res) => {
+router.get("/", checkGroupMembership, async (req, res) => {
     try {
         const { groupID } = req.query;
 
-        let query = `
+        const query = `
             SELECT
                 e.id,
                 e.description,
@@ -212,28 +229,21 @@ router.get("/",checkGroupMembership, async (req, res) => {
             FROM expenses e
             JOIN users u ON e.paid_by = u.id
             JOIN groups g ON e.group_id = g.id
+            WHERE e.group_id = $1
+            ORDER BY e.id ASC
         `;
 
-        const values = [];
-
-        if (groupID) {
-            query += ` WHERE e.group_id = $1`;
-            values.push(groupID);
-        }
-
-        query += ` ORDER BY e.id ASC`;
-
-        const result = await pool.query(query, values);
+        const result = await pool.query(query, [Number(groupID)]);
 
         res.status(200).json(result.rows);
 
     } catch (error) {
         console.error(error);
+
         res.status(500).json({
             error: "Failed to fetch expenses"
         });
     }
 });
-
 
 module.exports = router;
