@@ -96,7 +96,11 @@ router.post("/", async (req, res) => {
                 error: "Group name is required"
             });
         }
-
+        if (name.trim().length > 100) {
+            return res.status(400).json({
+                error: "Group name cannot exceed 100 characters"
+            });
+        }
         client = await pool.connect();
 
         await client.query("BEGIN");
