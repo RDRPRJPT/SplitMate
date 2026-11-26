@@ -1,4 +1,3 @@
-
 const express = require("express");
 const cors = require("cors");
 
@@ -10,7 +9,22 @@ const userRoutes = require("./routes/userRoutes");
 const app = express();
 
 // Middleware
-app.use(cors());
+const allowedOrigins = (
+    process.env.FRONTEND_URL || "http://localhost:5173"
+)
+    .split(",")
+    .map(origin => origin.trim());
+
+app.use(cors({
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error("Not allowed by CORS"));
+        }
+    }
+}));
+
 app.use(express.json());
 
 // Routes
@@ -21,6 +35,13 @@ app.use("/api/users", userRoutes);
 // Home route
 app.get("/", (req, res) => {
     res.send("Welcome to SplitMate Backend!");
+});
+
+app.get("/health", (req, res) => {
+    res.status(200).json({
+        status: "OK",
+        message: "SplitMate API is running"
+    });
 });
 
 // Database test route
