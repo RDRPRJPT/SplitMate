@@ -127,7 +127,32 @@ describe("POST /api/expenses", () => {
             await cleanupGroup(groupID);
         }
     });
+    test("should reject an expense with a numeric-only description", async () => {
+        const token = createToken(1);
+        let groupID;
 
+        try {
+            groupID = await createGroup(token, "Numeric Description Test");
+
+            const response = await request(app)
+                .post("/api/expenses")
+                .set("Authorization", `Bearer ${token}`)
+                .send({
+                    description: "123",
+                    amount: 500,
+                    paidBy: 1,
+                    groupID
+                });
+
+            expect(response.statusCode).toBe(400);
+            expect(response.body.error).toBe(
+                "Description must contain at least one letter"
+            );
+
+        } finally {
+            await cleanupGroup(groupID);
+        }
+    });
     test("should reject an expense paid by a non-member", async () => {
         const token = createToken(1);
         let groupID;

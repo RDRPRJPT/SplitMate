@@ -57,6 +57,12 @@ router.post("/", checkGroupMembership, async (req, res) => {
         });
     }
 
+    if (!/\p{L}/u.test(description.trim())) {
+        return res.status(400).json({
+            error: "Description must contain at least one letter"
+        });
+    }
+
     if (description.trim().length > 100) {
         return res.status(400).json({
             error: "Description cannot exceed 100 characters"
