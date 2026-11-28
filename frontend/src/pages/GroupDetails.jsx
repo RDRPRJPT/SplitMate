@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { apiRequest } from "../api";
 
@@ -22,7 +23,6 @@ function GroupDetails({ group, onBack }) {
 
       setBalances(balancesData);
       setSettlements(settlementsData);
-
     } catch (error) {
       setError(error.message);
     }
@@ -61,7 +61,7 @@ function GroupDetails({ group, onBack }) {
   }, [group.id]);
 
   return (
-    <main className="mx-auto max-w-7xl px-6 py-16">
+    <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-16">
       <button
         onClick={onBack}
         className="mb-10 rounded-full border border-white/10 px-5 py-2.5 text-sm text-slate-300 transition hover:bg-white/10 hover:text-white"
@@ -74,7 +74,7 @@ function GroupDetails({ group, onBack }) {
           Your space / Group details
         </p>
 
-        <h2 className="text-4xl font-bold tracking-tight sm:text-6xl">
+        <h2 className="break-words text-3xl font-bold tracking-tight sm:text-6xl">
           {group.name}
         </h2>
 
@@ -92,14 +92,14 @@ function GroupDetails({ group, onBack }) {
       {error && (
         <p className="mt-10 text-red-400">{error}</p>
       )}
-    
+
       {!loading && !error && (
         <>
           {/* Balances and settlements */}
           <div className="mt-10 grid gap-6 md:grid-cols-2">
 
             {/* Balances */}
-            <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-8">
+            <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 sm:p-8">
               <h3 className="text-xl font-semibold">Balances</h3>
               <p className="mt-1 text-sm text-slate-400">
                 See who owes and who gets money back
@@ -109,12 +109,14 @@ function GroupDetails({ group, onBack }) {
                 {balances.map((member) => (
                   <div
                     key={member.user_id}
-                    className="flex items-center justify-between"
+                    className="flex items-center justify-between gap-3"
                   >
-                    <span className="text-slate-300">{member.name}</span>
+                    <span className="break-words text-slate-300">
+                      {member.name}
+                    </span>
 
                     <span
-                      className={`text-sm font-semibold ${
+                      className={`shrink-0 text-sm font-semibold ${
                         member.net_balance > 0
                           ? "text-lime-300"
                           : member.net_balance < 0
@@ -134,8 +136,10 @@ function GroupDetails({ group, onBack }) {
             </section>
 
             {/* Suggested settlements */}
-            <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-8">
-              <h3 className="text-xl font-semibold">Suggested settlements</h3>
+            <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 sm:p-8">
+              <h3 className="text-xl font-semibold">
+                Suggested settlements
+              </h3>
               <p className="mt-1 text-sm text-slate-400">
                 Simplest way to settle the group's dues
               </p>
@@ -149,15 +153,19 @@ function GroupDetails({ group, onBack }) {
                   settlements.map((settlement, index) => (
                     <div
                       key={index}
-                      className="flex items-center justify-between gap-3 rounded-xl bg-white/[0.03] p-4"
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white/[0.03] p-3 sm:gap-3 sm:p-4"
                     >
-                      <div className="text-sm">
-                        <span className="text-slate-300">{settlement.from}</span>
+                      <div className="break-words text-sm">
+                        <span className="text-slate-300">
+                          {settlement.from}
+                        </span>
                         <span className="mx-2 text-lime-300">→</span>
-                        <span className="text-slate-300">{settlement.to}</span>
+                        <span className="text-slate-300">
+                          {settlement.to}
+                        </span>
                       </div>
 
-                      <span className="font-semibold text-lime-300">
+                      <span className="shrink-0 font-semibold text-lime-300">
                         ₹{settlement.amount}
                       </span>
                     </div>
@@ -166,10 +174,11 @@ function GroupDetails({ group, onBack }) {
               </div>
             </section>
           </div>
+
           <div className="mt-12 grid gap-6 md:grid-cols-2">
 
             {/* Members section */}
-            <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-8">
+            <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 sm:p-8">
               <h3 className="text-xl font-semibold">Members</h3>
 
               <p className="mt-1 text-sm text-slate-400">
@@ -183,12 +192,17 @@ function GroupDetails({ group, onBack }) {
                   </p>
                 ) : (
                   members.map((member) => (
-                    <div key={member.id} className="flex justify-between">
-                      <span>{member.name}</span>
+                    <div
+                      key={member.id}
+                      className="sm:flex sm:items-center sm:justify-between"
+                    >
+                      <p className="block break-words">
+                        {member.name}
+                      </p>
 
-                      <span className="text-sm text-slate-500">
+                      <p className="mt-1 block break-all text-sm text-slate-500 sm:mt-0 sm:text-right">
                         {member.email}
-                      </span>
+                      </p>
                     </div>
                   ))
                 )}
@@ -212,7 +226,7 @@ function GroupDetails({ group, onBack }) {
             </section>
 
             {/* Expenses section */}
-            <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-8">
+            <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 sm:p-8">
               <h3 className="text-xl font-semibold">Expenses</h3>
 
               <p className="mt-1 text-sm text-slate-400">
@@ -225,73 +239,76 @@ function GroupDetails({ group, onBack }) {
                     No expenses yet.
                   </p>
                 ) : (
-                  
-                expenses.map((expense) => (
+                  expenses.map((expense) => (
                     <div
-                        key={expense.id}
-                        className="rounded-xl border border-white/10 bg-white/[0.03] p-4"
+                      key={expense.id}
+                      className="rounded-xl border border-white/10 bg-white/[0.03] p-4"
                     >
-                        <button
-                            onClick={() =>
-                                setExpandedExpense(
-                                    expandedExpense === expense.id ? null : expense.id
-                                )
-                            }
-                            className="flex w-full items-center justify-between gap-4 text-left"
-                        >
-                            <div>
-                                <p className="font-medium">{expense.description}</p>
+                      <button
+                        onClick={() =>
+                          setExpandedExpense(
+                            expandedExpense === expense.id
+                              ? null
+                              : expense.id
+                          )
+                        }
+                        className="flex w-full items-center justify-between gap-4 text-left"
+                      >
+                        <div className="min-w-0">
+                          <p className="break-words font-medium">
+                            {expense.description}
+                          </p>
 
-                                <p className="mt-1 text-xs text-slate-500">
-                                    Paid by {expense.paid_by_name}
-                                </p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            Paid by {expense.paid_by_name}
+                          </p>
+                        </div>
+
+                        <div className="shrink-0 text-right">
+                          <p className="font-semibold text-lime-300">
+                            ₹{expense.amount}
+                          </p>
+
+                          <p className="mt-1 text-xs text-slate-500">
+                            {expandedExpense === expense.id
+                              ? "Hide details ↑"
+                              : "View split ↓"}
+                          </p>
+                        </div>
+                      </button>
+
+                      {expandedExpense === expense.id && (
+                        <div className="mt-4 border-t border-white/10 pt-4">
+                          <p className="mb-3 text-sm font-semibold text-slate-300">
+                            Individual shares
+                          </p>
+
+                          {!expense.splits || expense.splits.length === 0 ? (
+                            <p className="text-sm text-slate-500">
+                              No split details available for this expense.
+                            </p>
+                          ) : (
+                            <div className="space-y-3">
+                              {expense.splits.map((split) => (
+                                <div
+                                  key={split.user_id}
+                                  className="flex justify-between gap-3 text-sm"
+                                >
+                                  <span className="break-words text-slate-400">
+                                    {split.user_name}
+                                  </span>
+
+                                  <span className="shrink-0 font-medium">
+                                    ₹{split.amount_owed}
+                                  </span>
+                                </div>
+                              ))}
                             </div>
-
-                            <div className="text-right">
-                                <p className="font-semibold text-lime-300">
-                                    ₹{expense.amount}
-                                </p>
-
-                                <p className="mt-1 text-xs text-slate-500">
-                                    {expandedExpense === expense.id
-                                        ? "Hide details ↑"
-                                        : "View split ↓"}
-                                </p>
-                            </div>
-                        </button>
-
-                        {expandedExpense === expense.id && (
-                            <div className="mt-4 border-t border-white/10 pt-4">
-                                <p className="mb-3 text-sm font-semibold text-slate-300">
-                                    Individual shares
-                                </p>
-
-                                {!expense.splits || expense.splits.length === 0 ? (
-                                    <p className="text-sm text-slate-500">
-                                        No split details available for this expense.
-                                    </p>
-                                ) : (
-                                    <div className="space-y-3">
-                                        {expense.splits.map((split) => (
-                                            <div
-                                                key={split.user_id}
-                                                className="flex justify-between text-sm"
-                                            >
-                                                <span className="text-slate-400">
-                                                    {split.user_name}
-                                                </span>
-
-                                                <span className="font-medium">
-                                                    ₹{split.amount_owed}
-                                                </span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        )}
+                          )}
+                        </div>
+                      )}
                     </div>
-                ))
+                  ))
                 )}
               </div>
 
@@ -306,7 +323,8 @@ function GroupDetails({ group, onBack }) {
                       ...previousExpenses,
                       newExpense,
                     ]);
-                    refreshFinancials();  
+
+                    refreshFinancials();
                   }}
                 />
               </div>
